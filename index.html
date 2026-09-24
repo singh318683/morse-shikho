@@ -1,0 +1,572 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#16283F">
+<title>Morse Shikho — learn Morse code by sound</title>
+<meta name="description" content="Learn Morse code from zero with the Koch method, then keep it sharp with daily practice.">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><circle cx='50' cy='50' r='40' fill='%23FFB547'/></svg>">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:wght@400;700&family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700;12..96,800&display=swap" rel="stylesheet">
+<style>
+:root{
+  --deck:#16283F; --panel:#1E3452; --panel-2:#274268; --fog:#E4EAF1; --steel:#8BA0B8;
+  --lamp:#FFB547; --lamp-glow:rgba(255,181,71,.55); --good:#5CC8A8; --bad:#FF7A6B;
+  --display:"Bricolage Grotesque", "Segoe UI", system-ui, sans-serif;
+  --body:"Atkinson Hyperlegible", "Segoe UI", system-ui, sans-serif;
+  box-sizing:border-box;
+  padding-top:env(safe-area-inset-top,0px); padding-bottom:env(safe-area-inset-bottom,0px);
+}
+*,*::before,*::after{box-sizing:inherit}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+html,body{margin:0;min-height:100%}
+body{background:var(--deck);color:var(--fog);font-family:var(--body);font-size:17px;line-height:1.5;-webkit-font-smoothing:antialiased}
+button,input,select,textarea{font:inherit;color:inherit}
+button{cursor:pointer}
+:focus-visible{outline:3px solid var(--lamp);outline-offset:3px;border-radius:6px}
+.wrap{max-width:760px;margin:0 auto;padding:0 18px 64px}
+
+/* Header + signal lamp */
+header{display:flex;align-items:center;gap:18px;padding:22px 0 14px}
+.lamp{flex:none;width:64px;height:64px;border-radius:50%;background:radial-gradient(circle at 35% 30%,#3a5478,#1b2f4b 70%);border:3px solid #34507a;transition:background .03s,box-shadow .03s}
+.lamp.on{background:radial-gradient(circle at 35% 30%,#fff3d6,var(--lamp) 55%,#e08f14);box-shadow:0 0 28px 8px var(--lamp-glow),0 0 80px 20px rgba(255,181,71,.18);border-color:#ffd08a}
+.brand h1{font-family:var(--display);font-weight:800;font-size:clamp(28px,6vw,40px);line-height:1;margin:0;letter-spacing:-.02em}
+.brand p{margin:4px 0 0;color:var(--steel);font-size:15px}
+.streak{margin-left:auto;text-align:right;font-family:var(--display);line-height:1.1}
+.streak b{display:block;font-size:28px;color:var(--lamp)}
+.streak span{font-size:13px;color:var(--steel)}
+
+/* Tabs */
+nav{position:sticky;top:env(safe-area-inset-top,0px);z-index:5;background:var(--deck);display:flex;gap:4px;overflow-x:auto;padding:8px 0 10px;border-bottom:1px solid #2b4466;margin-bottom:22px;scrollbar-width:none}
+nav::-webkit-scrollbar{display:none}
+nav button{flex:none;background:none;border:0;padding:8px 14px;border-radius:999px;color:var(--steel);font-weight:700}
+nav button[aria-selected="true"]{background:var(--fog);color:var(--deck)}
+section[hidden]{display:none}
+
+h2{font-family:var(--display);font-weight:700;font-size:26px;margin:0 0 6px;letter-spacing:-.01em}
+h3{font-family:var(--display);font-weight:700;font-size:19px;margin:0 0 8px}
+p{margin:0 0 12px;max-width:62ch}
+.muted{color:var(--steel)}
+.panel{background:var(--panel);border-radius:18px;padding:20px;margin-bottom:16px}
+.row{display:flex;flex-wrap:wrap;gap:10px;align-items:center}
+.btn{background:var(--lamp);color:#2a1a00;border:0;border-radius:12px;padding:12px 20px;font-weight:700;font-size:17px}
+.btn:hover{filter:brightness(1.06)}
+.btn.ghost{background:transparent;color:var(--fog);border:2px solid #3b5a85}
+.btn.small{padding:8px 14px;font-size:15px}
+.btn:disabled{opacity:.45;cursor:default}
+
+/* Dit / dah glyphs */
+.pat{display:inline-flex;align-items:center;gap:6px;vertical-align:middle}
+.pat i{display:block;height:10px;background:currentColor;border-radius:5px}
+.pat i.d{width:10px}.pat i.h{width:30px}
+.pat.big i{height:16px;border-radius:8px}.pat.big i.d{width:16px}.pat.big i.h{width:48px}
+.pat.big{gap:10px}
+
+/* Koch tape */
+.tape{display:flex;flex-wrap:wrap;gap:6px;margin-top:12px}
+.tape button{width:40px;height:40px;border-radius:10px;border:0;background:#223a5c;color:#4d6687;font-family:var(--display);font-weight:700;font-size:18px}
+.tape button.open{background:var(--panel-2);color:var(--fog)}
+.tape button.next{background:transparent;color:var(--lamp);outline:2px dashed var(--lamp);outline-offset:-2px}
+
+.meet{display:flex;flex-wrap:wrap;gap:14px;margin:14px 0 18px}
+.meet button{background:var(--panel-2);border:0;border-radius:16px;padding:18px 22px;display:flex;flex-direction:column;align-items:flex-start;gap:12px;min-width:150px;text-align:left}
+.meet b{font-family:var(--display);font-size:52px;line-height:1}
+.meet small{color:var(--steel)}
+
+/* Drill */
+.drill-top{display:flex;justify-content:space-between;align-items:baseline;gap:10px;margin-bottom:12px}
+.bar{height:8px;background:#223a5c;border-radius:4px;overflow:hidden;margin-bottom:18px}
+.bar div{height:100%;background:var(--lamp);width:0;transition:width .25s}
+.stage{min-height:150px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;text-align:center;border-radius:14px;background:#182c47;margin-bottom:16px;padding:16px}
+.stage .big{font-family:var(--display);font-size:64px;font-weight:800;line-height:1}
+.stage.good{box-shadow:inset 0 0 0 3px var(--good)}
+.stage.bad{box-shadow:inset 0 0 0 3px var(--bad)}
+.keys{display:grid;grid-template-columns:repeat(auto-fill,minmax(54px,1fr));gap:8px}
+.keys button{height:54px;border-radius:12px;border:0;background:var(--panel-2);font-family:var(--display);font-weight:700;font-size:22px}
+.keys button:active{background:#33547f}
+.result{font-family:var(--display);font-size:56px;font-weight:800;line-height:1;margin:6px 0}
+
+input[type=text],textarea{width:100%;background:#152740;border:2px solid #34507a;border-radius:12px;padding:12px 14px;font-size:20px;letter-spacing:.04em}
+textarea{font-size:17px;min-height:90px;resize:vertical}
+.out{font-family:var(--body);font-size:22px;letter-spacing:.08em;word-break:break-word;min-height:34px;padding:10px 0}
+
+/* Daily */
+.week{display:grid;grid-template-columns:repeat(7,1fr);gap:8px;margin:14px 0 4px}
+.week div{text-align:center;font-size:13px;color:var(--steel)}
+.week i{display:block;margin:0 auto 6px;width:34px;height:34px;border-radius:50%;background:#223a5c}
+.week i.part{background:radial-gradient(circle,var(--lamp) 0 32%,#223a5c 34%)}
+.week i.done{background:var(--lamp);box-shadow:0 0 14px var(--lamp-glow)}
+.goalbar{height:14px;background:#223a5c;border-radius:7px;overflow:hidden;margin:8px 0}
+.goalbar div{height:100%;background:var(--lamp);transition:width .3s}
+.weak{display:flex;gap:10px;flex-wrap:wrap}
+.weak span{background:var(--panel-2);border-radius:10px;padding:6px 12px;font-family:var(--display);font-weight:700}
+.weak em{font-style:normal;color:var(--steel);font-weight:400;font-family:var(--body);font-size:14px;margin-left:6px}
+
+/* Send key */
+.keyer{width:100%;height:150px;border-radius:24px;border:0;background:linear-gradient(#c79a3c,#9c7424);color:#2a1a00;font-family:var(--display);font-weight:800;font-size:22px;box-shadow:0 8px 0 #6b4f16;touch-action:none;user-select:none;-webkit-user-select:none;margin:8px 0 18px}
+.keyer.down{transform:translateY(6px);box-shadow:0 2px 0 #6b4f16}
+.target{font-family:var(--display);font-size:44px;font-weight:800;letter-spacing:.06em}
+
+/* Chart */
+.chart{display:grid;grid-template-columns:repeat(auto-fill,minmax(130px,1fr));gap:8px;margin-bottom:22px}
+.chart button{display:flex;align-items:center;gap:12px;background:var(--panel);border:0;border-radius:12px;padding:10px 12px}
+.chart b{font-family:var(--display);font-size:24px;width:26px;text-align:center}
+
+label.set{display:block;margin-bottom:18px}
+label.set span{display:flex;justify-content:space-between;font-weight:700;margin-bottom:6px}
+label.set output{color:var(--lamp)}
+input[type=range]{width:100%;accent-color:var(--lamp)}
+.seg{display:inline-flex;background:#152740;border-radius:12px;padding:4px;gap:4px}
+.seg button{border:0;background:none;padding:8px 14px;border-radius:9px;font-weight:700;color:var(--steel)}
+.seg button[aria-pressed="true"]{background:var(--panel-2);color:var(--fog)}
+@media (max-width:520px){.lamp{width:52px;height:52px}.streak b{font-size:22px}.stage .big{font-size:52px}}
+@media (prefers-reduced-motion:reduce){*{transition:none!important}}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <div class="lamp" id="lamp" aria-hidden="true"></div>
+    <div class="brand"><h1>Morse Shikho</h1><p>Learn by ear, a few minutes a day</p></div>
+    <div class="streak"><b id="streakNum">0</b><span>day streak</span></div>
+  </header>
+
+  <nav role="tablist" id="tabs">
+    <button role="tab" data-tab="learn" aria-selected="true">Learn</button>
+    <button role="tab" data-tab="daily">Daily</button>
+    <button role="tab" data-tab="practice">Practice</button>
+    <button role="tab" data-tab="send">Send</button>
+    <button role="tab" data-tab="chart">Chart</button>
+    <button role="tab" data-tab="translate">Translate</button>
+    <button role="tab" data-tab="settings">Settings</button>
+  </nav>
+
+  <!-- LEARN -->
+  <section id="learn">
+    <div class="panel" id="intro">
+      <h2>Start here</h2>
+      <p>Morse code is made of two sounds: a short <b>dit</b> and a long <b>dah</b>. Each letter is a rhythm, like a tiny tune.</p>
+      <p>Don't count dots. Learn each letter as a sound, the way you recognise a word when someone says it. This app uses the Koch method: you hear letters at full speed from day one and add one new letter each time you reach 90%.</p>
+      <div class="row" style="margin:6px 0 16px">
+        <button class="btn ghost small" data-play="E">Hear E (one dit)</button>
+        <button class="btn ghost small" data-play="T">Hear T (one dah)</button>
+        <button class="btn ghost small" data-play="SOS">Hear SOS</button>
+      </div>
+      <button class="btn" id="introDone">Start lesson 1</button>
+    </div>
+    <div id="lessonArea"></div>
+    <div class="panel">
+      <h3>Your letters</h3>
+      <p class="muted">Tap any unlocked letter to hear it. The dashed one is up next.</p>
+      <div class="tape" id="tape"></div>
+    </div>
+  </section>
+
+  <!-- DAILY -->
+  <section id="daily" hidden>
+    <div id="dailyArea"></div>
+  </section>
+
+  <!-- PRACTICE -->
+  <section id="practice" hidden>
+    <div class="panel" id="practiceSetup">
+      <h2>Free practice</h2>
+      <p class="muted">Practice as much as you like. Every answer counts toward today's goal.</p>
+      <div class="row" style="margin-bottom:14px">
+        <div class="seg" id="pMode">
+          <button aria-pressed="true" data-v="chars">Letters</button>
+          <button aria-pressed="false" data-v="words">Words</button>
+        </div>
+        <div class="seg" id="pPool">
+          <button aria-pressed="true" data-v="mine">My letters</button>
+          <button aria-pressed="false" data-v="all">All</button>
+        </div>
+      </div>
+      <button class="btn" id="pStart">Start practice</button>
+    </div>
+    <div id="practiceArea"></div>
+  </section>
+
+  <!-- SEND -->
+  <section id="send" hidden>
+    <div class="panel">
+      <h2>Send with the key</h2>
+      <p class="muted">Press and hold the key (or your space bar). A short press is a dit, a long press is a dah. Pause to end a letter.</p>
+      <p style="margin:12px 0 0" class="muted">Send this:</p>
+      <div class="row" style="justify-content:space-between">
+        <div class="target" id="sendTarget">K</div>
+        <button class="btn ghost small" id="sendHear">Hear it</button>
+      </div>
+      <button class="keyer" id="keyer">Press to key</button>
+      <div class="muted">You sent:</div>
+      <div class="out" id="sendOut"></div>
+      <div class="row">
+        <button class="btn ghost small" id="sendClear">Clear</button>
+        <button class="btn ghost small" id="sendSkip">New target</button>
+      </div>
+      <label class="set" style="margin-top:20px"><span>Keying speed <output id="sendWpmOut"></output></span>
+        <input type="range" id="sendWpm" min="5" max="25" step="1"></label>
+    </div>
+  </section>
+
+  <!-- CHART -->
+  <section id="chart" hidden>
+    <h2>Reference chart</h2>
+    <p class="muted">Tap to hear. Try to remember the sound, not the picture.</p>
+    <h3 style="margin-top:18px">Letters</h3><div class="chart" id="chLetters"></div>
+    <h3>Numbers</h3><div class="chart" id="chNumbers"></div>
+    <h3>Punctuation</h3><div class="chart" id="chPunct"></div>
+  </section>
+
+  <!-- TRANSLATE -->
+  <section id="translate" hidden>
+    <div class="panel">
+      <h2>Text to Morse</h2>
+      <textarea id="tIn" placeholder="Type a message">CQ CQ DE MORSE SHIKHO</textarea>
+      <div class="out" id="tOut"></div>
+      <div class="row"><button class="btn" id="tPlay">Play</button><button class="btn ghost" id="tStop">Stop</button></div>
+    </div>
+    <div class="panel">
+      <h2>Morse to text</h2>
+      <p class="muted">Use . and - with a space between letters and / between words.</p>
+      <textarea id="mIn" placeholder="... --- ...">.... . .-.. .-.. --- / .-- --- .-. .-.. -..</textarea>
+      <div class="out" id="mOut"></div>
+    </div>
+  </section>
+
+  <!-- SETTINGS -->
+  <section id="settings" hidden>
+    <div class="panel">
+      <h2>Sound</h2>
+      <label class="set"><span>Letter speed <output id="wpmOut"></output></span>
+        <input type="range" id="wpm" min="10" max="35" step="1"></label>
+      <p class="muted" style="margin-top:-8px">How fast each letter is played. 20 WPM is a good default so you learn the rhythm, not the dots.</p>
+      <label class="set"><span>Spacing speed <output id="effOut"></output></span>
+        <input type="range" id="eff" min="4" max="35" step="1"></label>
+      <p class="muted" style="margin-top:-8px">Extra gaps between letters give you thinking time. Raise it as you improve.</p>
+      <label class="set"><span>Tone pitch <output id="freqOut"></output></span>
+        <input type="range" id="freq" min="400" max="1000" step="10"></label>
+      <label class="set"><span>Volume <output id="volOut"></output></span>
+        <input type="range" id="vol" min="0.1" max="1" step="0.05"></label>
+      <button class="btn ghost small" data-play="PARIS">Test sound</button>
+    </div>
+    <div class="panel">
+      <h2>Daily goal</h2>
+      <label class="set"><span>Answers per day <output id="goalOut"></output></span>
+        <input type="range" id="goal" min="20" max="200" step="10"></label>
+    </div>
+    <div class="panel">
+      <h2>Progress</h2>
+      <p class="muted">Progress is saved in this browser only.</p>
+      <button class="btn ghost small" id="reset">Reset all progress</button>
+    </div>
+  </section>
+</div>
+
+<script>
+/* ---------- Data ---------- */
+const MORSE={A:'.-',B:'-...',C:'-.-.',D:'-..',E:'.',F:'..-.',G:'--.',H:'....',I:'..',J:'.---',K:'-.-',L:'.-..',M:'--',N:'-.',O:'---',P:'.--.',Q:'--.-',R:'.-.',S:'...',T:'-',U:'..-',V:'...-',W:'.--',X:'-..-',Y:'-.--',Z:'--..',
+'0':'-----','1':'.----','2':'..---','3':'...--','4':'....-','5':'.....','6':'-....','7':'--...','8':'---..','9':'----.',
+'.':'.-.-.-',',':'--..--','?':'..--..','/':'-..-.','=':'-...-'};
+const REV=Object.fromEntries(Object.entries(MORSE).map(([k,v])=>[v,k]));
+const KOCH=['K','M','U','R','E','S','N','A','P','T','L','W','I','.','J','Z','=','F','O','Y',',','V','G','5','/','Q','9','2','H','3','8','B','?','4','7','C','1','D','6','0','X'];
+const WORDS=('THE AND FOR ARE BUT NOT YOU ALL ANY CAN HER WAS ONE OUR OUT DAY GET HAS HIM HIS HOW MAN NEW NOW OLD SEE TWO WAY WHO DID LET PUT SAY SHE TOO USE '+
+'SOS CQ DE RST QTH NAME RIG ANT WX TEST MORSE RADIO SIGNAL KEY TONE SPEED CODE HELLO WORLD GOOD NIGHT LEARN DAILY '+
+'MUSE SURE RUNS MEN SUN RUN NURSE TEA SEAT PASTE STAMP TRUMP PALM MAPLE SUPER TUNE WALK TAPE LAMP RAIN RIPE WIRE').split(' ');
+
+/* ---------- State ---------- */
+const DEFAULTS={level:2,stats:{},days:{},introDone:false,
+  settings:{wpm:20,eff:12,freq:650,vol:0.6,sendWpm:12,goal:50}};
+let S=load();
+function load(){try{const s=JSON.parse(localStorage.getItem('morse-shikho')||'null');
+  if(s){return {...DEFAULTS,...s,settings:{...DEFAULTS.settings,...(s.settings||{})}}}}catch(e){}
+  return structuredClone(DEFAULTS)}
+function save(){try{localStorage.setItem('morse-shikho',JSON.stringify(S))}catch(e){}}
+function dayKey(d=new Date()){return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0')}
+function unlocked(){return KOCH.slice(0,S.level)}
+function record(ch,ok){
+  const st=S.stats[ch]||(S.stats[ch]={n:0,c:0,r:[]});
+  st.n++; if(ok)st.c++; st.r.push(ok?1:0); if(st.r.length>20)st.r.shift();
+  const k=dayKey(); S.days[k]=(S.days[k]||0)+1; save(); renderStreak();
+}
+function acc(ch){const st=S.stats[ch]; if(!st||!st.r.length)return null; return st.r.reduce((a,b)=>a+b,0)/st.r.length}
+function streak(){let n=0;const d=new Date();
+  if((S.days[dayKey(d)]||0)<S.settings.goal)d.setDate(d.getDate()-1);
+  while((S.days[dayKey(d)]||0)>=S.settings.goal){n++;d.setDate(d.getDate()-1)}
+  return n}
+function renderStreak(){document.getElementById('streakNum').textContent=streak()}
+
+/* ---------- Audio + lamp ---------- */
+let ctx=null, timers=[], pending=null, liveNodes=[];
+const lampEl=document.getElementById('lamp');
+function ac(){if(!ctx)ctx=new (window.AudioContext||window.webkitAudioContext)();if(ctx.state==='suspended')ctx.resume();return ctx}
+function timing(wpm=S.settings.wpm,eff=S.settings.eff){
+  const u=1.2/wpm; let cg=3*u, wg=7*u;
+  if(eff<wpm){const ta=(60*wpm-37.2*eff)/(eff*wpm); cg=3*ta/19; wg=7*ta/19}
+  return {u,cg,wg}}
+function tone(t,dur){
+  const c=ac(),o=c.createOscillator(),g=c.createGain(),v=S.settings.vol*0.5;
+  o.type='sine';o.frequency.value=S.settings.freq;
+  g.gain.setValueAtTime(0,t);g.gain.linearRampToValueAtTime(v,t+.005);
+  g.gain.setValueAtTime(v,t+dur-.005);g.gain.linearRampToValueAtTime(0,t+dur);
+  o.connect(g).connect(c.destination);o.start(t);o.stop(t+dur+.02);liveNodes.push(o);
+  const now=c.currentTime;
+  timers.push(setTimeout(()=>lampEl.classList.add('on'),(t-now)*1000));
+  timers.push(setTimeout(()=>lampEl.classList.remove('on'),(t+dur-now)*1000));
+}
+function stopAll(){
+  timers.forEach(clearTimeout);timers=[];liveNodes.forEach(o=>{try{o.stop()}catch(e){}});liveNodes=[];
+  lampEl.classList.remove('on'); if(pending){const p=pending;pending=null;p(false)}
+}
+function play(text){
+  stopAll(); const c=ac(); const {u,cg,wg}=timing(); let t=c.currentTime+.08;
+  const words=String(text).toUpperCase().trim().split(/\s+/);
+  words.forEach((w,wi)=>{
+    [...w].forEach((ch,ci)=>{
+      const code=MORSE[ch]; if(!code)return;
+      [...code].forEach((s,si)=>{const d=s==='.'?u:3*u; tone(t,d); t+=d; if(si<code.length-1)t+=u});
+      if(ci<w.length-1)t+=cg;
+    });
+    if(wi<words.length-1)t+=wg;
+  });
+  return new Promise(res=>{pending=res;timers.push(setTimeout(()=>{if(pending===res){pending=null;res(true)}},(t-c.currentTime)*1000+60))});
+}
+
+/* ---------- Helpers ---------- */
+const $=id=>document.getElementById(id);
+function pat(code,big){return `<span class="pat${big?' big':''}" aria-label="${code.replace(/\./g,'dit ').replace(/-/g,'dah ')}">`+[...code].map(s=>`<i class="${s==='.'?'d':'h'}"></i>`).join('')+'</span>'}
+function esc(s){return String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]))}
+function weightedPick(pool,avoid){
+  const w=pool.map(ch=>{const a=acc(ch),n=(S.stats[ch]||{}).n||0;return (ch===avoid?.2:1)*(1+(a===null?2:(1-a)*5)+(n<5?1.5:0))});
+  let r=Math.random()*w.reduce((a,b)=>a+b,0);for(let i=0;i<pool.length;i++){r-=w[i];if(r<=0)return pool[i]}return pool[0]}
+function randGroup(pool,len){return Array.from({length:len},()=>pool[Math.floor(Math.random()*pool.length)]).join('')}
+function wordsFor(pool){const set=new Set(pool);return WORDS.filter(w=>[...w].every(c=>set.has(c)))}
+function delay(ms){return new Promise(r=>timers.push(setTimeout(r,ms)))}
+
+/* ---------- Letter drill ---------- */
+let activeDrill=null;
+class Drill{
+  constructor(el,{title,pool,count,newChars=[],onDone}){
+    Object.assign(this,{el,title,pool,count,newChars,onDone,i:0,right:0,cur:null,locked:true,last:null});
+    el.innerHTML=`<div class="panel">
+      <div class="drill-top"><h3>${esc(title)}</h3><span class="muted" data-k="count"></span></div>
+      <div class="bar"><div data-k="bar"></div></div>
+      <div class="stage" data-k="stage"><span class="muted">Listen, then pick the letter you heard</span></div>
+      <div class="row" style="margin-bottom:14px"><button class="btn ghost small" data-k="replay">Replay (space)</button><button class="btn ghost small" data-k="quit">End</button></div>
+      <div class="keys" data-k="keys">${pool.map(c=>`<button data-ch="${esc(c)}">${esc(c)}</button>`).join('')}</div></div>`;
+    this.q=k=>el.querySelector(`[data-k="${k}"]`);
+    this.q('keys').addEventListener('click',e=>{const b=e.target.closest('button');if(b)this.answer(b.dataset.ch)});
+    this.q('replay').onclick=()=>this.replay();
+    this.q('quit').onclick=()=>this.finish(true);
+    activeDrill=this; this.next();
+  }
+  replay(){if(this.cur)play(this.cur)}
+  async next(){
+    if(activeDrill!==this)return;
+    if(this.i>=this.count)return this.finish();
+    this.q('count').textContent=`${this.i+1} of ${this.count}`;
+    this.q('bar').style.width=(this.i/this.count*100)+'%';
+    const st=this.q('stage');st.className='stage';st.innerHTML='<span class="muted">Listen…</span>';
+    this.cur=(this.newChars.length&&Math.random()<.4)?this.newChars[Math.floor(Math.random()*this.newChars.length)]:weightedPick(this.pool,this.last);
+    this.last=this.cur; this.locked=false; await play(this.cur);
+    if(!this.locked&&activeDrill===this)st.innerHTML='<span class="muted">Which letter was it?</span>';
+  }
+  async answer(ch){
+    if(this.locked||activeDrill!==this)return; this.locked=true;
+    const ok=ch===this.cur; record(this.cur,ok); if(ok)this.right++; this.i++;
+    const st=this.q('stage'); st.className='stage '+(ok?'good':'bad');
+    st.innerHTML=`<div class="big">${esc(this.cur)}</div>${pat(MORSE[this.cur],true)}<div class="muted">${ok?'Correct':'You picked '+esc(ch)}</div>`;
+    if(ok){await delay(650)}else{await delay(300);await play(this.cur);await delay(700)}
+    this.next();
+  }
+  finish(quit){
+    if(activeDrill!==this)return; activeDrill=null; stopAll();
+    const done=this.i, pct=done?Math.round(this.right/done*100):0;
+    this.onDone&&this.onDone({pct,done,quit:!!quit&&done<this.count,right:this.right});
+  }
+}
+
+/* ---------- Word drill ---------- */
+class WordDrill{
+  constructor(el,{title,items,onDone}){
+    Object.assign(this,{el,title,items,onDone,i:0,right:0});
+    el.innerHTML=`<div class="panel">
+      <div class="drill-top"><h3>${esc(title)}</h3><span class="muted" data-k="count"></span></div>
+      <div class="bar"><div data-k="bar"></div></div>
+      <div class="stage" data-k="stage"><span class="muted">Listen, then type what you heard</span></div>
+      <input type="text" data-k="in" autocomplete="off" autocapitalize="characters" spellcheck="false" placeholder="Type and press Enter">
+      <div class="row" style="margin-top:12px"><button class="btn small" data-k="check">Check</button><button class="btn ghost small" data-k="replay">Replay</button><button class="btn ghost small" data-k="quit">End</button></div></div>`;
+    this.q=k=>el.querySelector(`[data-k="${k}"]`);
+    this.q('check').onclick=()=>this.check();
+    this.q('in').addEventListener('keydown',e=>{if(e.key==='Enter'){e.preventDefault();this.check()}});
+    this.q('replay').onclick=()=>play(this.cur);
+    this.q('quit').onclick=()=>this.finish(true);
+    activeDrill=this; this.next();
+  }
+  next(){
+    if(activeDrill!==this)return; if(this.i>=this.items.length)return this.finish();
+    this.cur=this.items[this.i]; this.checked=false;
+    this.q('count').textContent=`${this.i+1} of ${this.items.length}`;
+    this.q('bar').style.width=(this.i/this.items.length*100)+'%';
+    const st=this.q('stage');st.className='stage';st.innerHTML='<span class="muted">Listen…</span>';
+    const inp=this.q('in');inp.value='';inp.focus(); play(this.cur);
+  }
+  async check(){
+    if(this.checked||activeDrill!==this)return; this.checked=true;
+    const g=this.q('in').value.toUpperCase().replace(/\s+/g,''), t=this.cur;
+    [...t].forEach((c,k)=>record(c,g[k]===c));
+    const ok=g===t; if(ok)this.right++; this.i++;
+    const st=this.q('stage');st.className='stage '+(ok?'good':'bad');
+    st.innerHTML=`<div class="big" style="font-size:44px">${[...t].map((c,k)=>`<span style="color:${g[k]===c?'var(--fog)':'var(--bad)'}">${esc(c)}</span>`).join('')}</div><div class="muted">${ok?'Correct':'You typed '+esc(g||'nothing')}</div>`;
+    await delay(ok?800:1600); this.next();
+  }
+  finish(quit){if(activeDrill!==this)return;activeDrill=null;stopAll();
+    this.onDone&&this.onDone({pct:this.i?Math.round(this.right/this.i*100):0,done:this.i,quit:!!quit})}
+}
+
+document.addEventListener('keydown',e=>{
+  if(!activeDrill||!(activeDrill instanceof Drill))return;
+  if(e.target.tagName==='INPUT'||e.target.tagName==='TEXTAREA')return;
+  if(e.key===' '){e.preventDefault();activeDrill.replay();return}
+  const k=e.key.toUpperCase(); if(activeDrill.pool.includes(k)){e.preventDefault();activeDrill.answer(k)}
+});
+
+/* ---------- Learn ---------- */
+function renderTape(){
+  $('tape').innerHTML=KOCH.map((c,i)=>`<button class="${i<S.level?'open':i===S.level?'next':''}" ${i<S.level?`data-play="${esc(c)}"`:'disabled'} aria-label="${esc(c)}">${esc(c)}</button>`).join('');
+}
+function renderLearn(msg){
+  $('intro').hidden=S.introDone; renderTape();
+  const area=$('lessonArea'); if(!S.introDone){area.innerHTML='';return}
+  const lesson=S.level-1, all=S.level>=KOCH.length;
+  const fresh=S.level===2?['K','M']:[KOCH[S.level-1]];
+  area.innerHTML=`<div class="panel">
+    ${msg?`<p style="color:var(--lamp);font-weight:700">${msg}</p>`:''}
+    <h2>${all?'Every letter unlocked':'Lesson '+lesson}</h2>
+    <p class="muted">${all?'You know all 41 characters. Keep them sharp with daily practice and raise your spacing speed.':
+      `You know ${S.level} characters. Meet the newest one below, then score 90% or more on 20 questions to unlock the next.`}</p>
+    <div class="meet">${fresh.map(c=>`<button data-play="${esc(c)}"><b>${esc(c)}</b>${pat(MORSE[c],true)}<small>Tap to hear again</small></button>`).join('')}</div>
+    <button class="btn" id="lessonGo">${all?'Review all letters':'Start lesson drill'}</button></div>`;
+  $('lessonGo').onclick=()=>{
+    new Drill(area,{title:all?'Review':'Lesson '+lesson,pool:unlocked(),count:20,newChars:all?[]:fresh,onDone:({pct,done,quit})=>{
+      if(quit){renderLearn();return}
+      if(pct>=90&&!all){S.level++;save();play(KOCH[S.level-1]);renderLearn(`${pct}%. New letter unlocked: ${KOCH[S.level-1]}`)}
+      else renderLearn(all?`Review score: ${pct}%`:`${pct}%. You need 90% to unlock the next letter. Run it again.`);
+    }});
+  };
+}
+$('introDone').onclick=()=>{S.introDone=true;save();renderLearn()};
+
+/* ---------- Daily ---------- */
+function renderDaily(msg){
+  const today=S.days[dayKey()]||0, goal=S.settings.goal, pct=Math.min(100,today/goal*100);
+  const days=[];for(let i=6;i>=0;i--){const d=new Date();d.setDate(d.getDate()-i);const n=S.days[dayKey(d)]||0;
+    days.push(`<div><i class="${n>=goal?'done':n>0?'part':''}"></i>${d.toLocaleDateString(undefined,{weekday:'short'})}</div>`)}
+  const weak=unlocked().filter(c=>acc(c)!==null).sort((a,b)=>acc(a)-acc(b)).slice(0,5);
+  $('dailyArea').innerHTML=`<div class="panel">
+    ${msg?`<p style="color:var(--lamp);font-weight:700">${msg}</p>`:''}
+    <h2>Today's practice</h2>
+    <p class="muted">${today>=goal?'Goal reached. Extra practice still helps.':`${goal-today} answers to go. A daily session is about 5 minutes: letters weighted toward your weak spots, then a few words.`}</p>
+    <div class="goalbar"><div style="width:${pct}%"></div></div>
+    <p class="muted">${today} of ${goal} answers today</p>
+    <div class="week">${days.join('')}</div></div>
+    <div class="panel"><h3>Needs work</h3>
+    ${weak.length?`<div class="weak">${weak.map(c=>`<span>${esc(c)}<em>${Math.round(acc(c)*100)}%</em></span>`).join('')}</div>`:'<p class="muted">Answer a few questions and your trickiest letters will show here.</p>'}</div>
+    <button class="btn" id="dailyGo">Start daily session</button>`;
+  $('dailyGo').onclick=()=>{
+    const area=$('dailyArea');
+    new Drill(area,{title:'Daily letters',pool:unlocked(),count:25,onDone:({pct,quit})=>{
+      if(quit){renderDaily();return}
+      let items=wordsFor(unlocked()); items=items.sort(()=>Math.random()-.5).slice(0,5);
+      while(items.length<5)items.push(randGroup(unlocked(),3+Math.floor(Math.random()*2)));
+      new WordDrill(area,{title:'Daily words',items,onDone:r=>renderDaily(r.quit?'':`Session done. Letters ${pct}%, words ${r.pct}%.`)});
+    }});
+  };
+}
+
+/* ---------- Practice ---------- */
+function segVal(id){return $(id).querySelector('[aria-pressed="true"]').dataset.v}
+['pMode','pPool'].forEach(id=>$(id).addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;
+  $(id).querySelectorAll('button').forEach(x=>x.setAttribute('aria-pressed',x===b))}));
+$('pStart').onclick=()=>{
+  const pool=segVal('pPool')==='all'?Object.keys(MORSE):unlocked(), area=$('practiceArea'); $('practiceSetup').hidden=true;
+  const back=r=>{$('practiceSetup').hidden=false;area.innerHTML=r&&r.done?`<div class="panel"><div class="result">${r.pct}%</div><p class="muted">${r.done} answered</p></div>`:''};
+  if(segVal('pMode')==='chars')new Drill(area,{title:'Letter practice',pool,count:30,onDone:back});
+  else{let items=wordsFor(pool).sort(()=>Math.random()-.5).slice(0,10);while(items.length<10)items.push(randGroup(pool,4));
+    new WordDrill(area,{title:'Word practice',items,onDone:back})}
+};
+
+/* ---------- Send (keyer) ---------- */
+let kOsc=null,kGain=null,kDown=0,kUp=0,kSym='',kText='',kTimer=null,kTarget='K';
+function kUnit(){return 1.2/S.settings.sendWpm*1000}
+function keyDown(){
+  if(kDown)return; stopAll(); const c=ac(); clearTimeout(kTimer);
+  if(kUp&&performance.now()-kUp>kUnit()*5&&kText&&!kText.endsWith(' '))kText+=' ';
+  kDown=performance.now(); $('keyer').classList.add('down'); lampEl.classList.add('on');
+  kOsc=c.createOscillator();kGain=c.createGain();kOsc.frequency.value=S.settings.freq;
+  kGain.gain.setValueAtTime(0,c.currentTime);kGain.gain.linearRampToValueAtTime(S.settings.vol*.5,c.currentTime+.005);
+  kOsc.connect(kGain).connect(c.destination);kOsc.start();
+}
+function keyUp(){
+  if(!kDown)return; const d=performance.now()-kDown; kDown=0; kUp=performance.now();
+  $('keyer').classList.remove('down'); lampEl.classList.remove('on');
+  const c=ac();kGain.gain.setValueAtTime(kGain.gain.value,c.currentTime);kGain.gain.linearRampToValueAtTime(0,c.currentTime+.006);kOsc.stop(c.currentTime+.02);
+  kSym+=d<kUnit()*2?'.':'-'; renderSend();
+  kTimer=setTimeout(()=>{kText+=REV[kSym]||'#';kSym='';renderSend();checkSend()},kUnit()*2.5);
+}
+function renderSend(){$('sendOut').innerHTML=esc(kText)+(kSym?' '+pat(kSym):'')||'&nbsp;'}
+function newTarget(){const pool=unlocked();const ws=wordsFor(pool);
+  kTarget=Math.random()<.5||!ws.length?pool[Math.floor(Math.random()*pool.length)]:ws[Math.floor(Math.random()*ws.length)];
+  $('sendTarget').textContent=kTarget;kText='';kSym='';renderSend()}
+function checkSend(){if(kText.replace(/\s/g,'')===kTarget){[...kTarget].forEach(c=>record(c,true));
+  $('sendOut').innerHTML='<span style="color:var(--good)">'+esc(kText)+' ✓</span>';setTimeout(newTarget,900)}}
+const keyer=$('keyer');
+keyer.addEventListener('pointerdown',e=>{e.preventDefault();keyer.setPointerCapture(e.pointerId);keyDown()});
+keyer.addEventListener('pointerup',keyUp);keyer.addEventListener('pointercancel',keyUp);
+document.addEventListener('keydown',e=>{if(e.code==='Space'&&!$('send').hidden&&e.target.tagName!=='TEXTAREA'&&e.target.tagName!=='INPUT'){e.preventDefault();if(!e.repeat)keyDown()}});
+document.addEventListener('keyup',e=>{if(e.code==='Space'&&!$('send').hidden){e.preventDefault();keyUp()}});
+$('sendClear').onclick=()=>{kText='';kSym='';renderSend()};
+$('sendSkip').onclick=newTarget;
+$('sendHear').onclick=()=>play(kTarget);
+
+/* ---------- Chart ---------- */
+function chartHTML(keys){return keys.map(c=>`<button data-play="${esc(c)}"><b>${esc(c)}</b>${pat(MORSE[c])}</button>`).join('')}
+$('chLetters').innerHTML=chartHTML('ABCDEFGHIJKLMNOPQRSTUVWXYZ'.split(''));
+$('chNumbers').innerHTML=chartHTML('1234567890'.split(''));
+$('chPunct').innerHTML=chartHTML(['.',',','?','/','=']);
+
+/* ---------- Translate ---------- */
+function toMorse(t){return t.toUpperCase().trim().split(/\s+/).map(w=>[...w].map(c=>MORSE[c]||'').filter(Boolean).join(' ')).filter(Boolean).join(' / ')}
+function fromMorse(m){return m.trim().split(/\s*\/\s*|\s{3,}/).map(w=>w.trim().split(/\s+/).map(c=>REV[c]||(c?'#':'')).join('')).join(' ')}
+function renderT(){$('tOut').textContent=toMorse($('tIn').value).replace(/\./g,'·').replace(/-/g,'–')}
+function renderM(){$('mOut').textContent=fromMorse($('mIn').value.replace(/[·•]/g,'.').replace(/[–—_]/g,'-'))}
+$('tIn').addEventListener('input',renderT);$('mIn').addEventListener('input',renderM);
+$('tPlay').onclick=()=>play($('tIn').value);$('tStop').onclick=stopAll;
+
+/* ---------- Settings ---------- */
+const SET={wpm:v=>v+' WPM',eff:v=>v+' WPM',freq:v=>v+' Hz',vol:v=>Math.round(v*100)+'%',goal:v=>v,sendWpm:v=>v+' WPM'};
+Object.entries(SET).forEach(([k,f])=>{const el=$(k),out=$(k+'Out');el.value=S.settings[k];out.textContent=f(S.settings[k]);
+  el.addEventListener('input',()=>{S.settings[k]=+el.value;
+    if(k==='wpm'&&S.settings.eff>S.settings.wpm){S.settings.eff=S.settings.wpm;$('eff').value=S.settings.wpm;$('effOut').textContent=S.settings.wpm+' WPM'}
+    if(k==='eff'&&S.settings.eff>S.settings.wpm){S.settings.eff=S.settings.wpm;el.value=S.settings.wpm}
+    out.textContent=f(S.settings[k]);save();renderStreak()})});
+$('reset').onclick=()=>{if(confirm('Reset all lessons, stats and streak?')){S=structuredClone(DEFAULTS);save();location.reload()}};
+
+/* ---------- Tabs + global play buttons ---------- */
+document.addEventListener('click',e=>{const b=e.target.closest('[data-play]');if(b)play(b.dataset.play)});
+$('tabs').addEventListener('click',e=>{const b=e.target.closest('[data-tab]');if(!b)return;
+  if(activeDrill){activeDrill=null} stopAll();
+  document.querySelectorAll('[data-tab]').forEach(x=>x.setAttribute('aria-selected',x===b));
+  document.querySelectorAll('main section, .wrap > section').forEach(s=>s.hidden=s.id!==b.dataset.tab);
+  const t=b.dataset.tab;
+  if(t==='learn')renderLearn(); if(t==='daily')renderDaily();
+  if(t==='practice'){$('practiceSetup').hidden=false;$('practiceArea').innerHTML=''}
+  if(t==='send')newTarget();
+});
+
+renderStreak();renderLearn();renderT();renderM();
+</script>
+</body>
+</html>
