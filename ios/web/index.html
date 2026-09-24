@@ -1,0 +1,671 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no">
+<meta name="theme-color" content="#16283F">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Morse Shikho">
+<link rel="manifest" href="manifest.json">
+<link rel="apple-touch-icon" href="icon-180.png">
+<link rel="icon" href="icon-192.png">
+<title>Morse Shikho — learn Morse code by sound</title>
+<meta name="description" content="Learn Morse code from zero with the Koch method, then keep it sharp with daily practice.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:wght@400;700&family=Plus+Jakarta+Sans:wght@600;700;800&display=swap" rel="stylesheet">
+<style>
+:root{
+  --deck:#16283F; --panel:#1E3452; --panel-2:#274268; --fog:#E4EAF1; --steel:#8BA0B8;
+  --lamp:#FFB547; --lamp-glow:rgba(255,181,71,.55); --accent:#2EE6B6; --accent-ink:#03261C; --accent-glow:rgba(46,230,182,.45); --good:#2EE6B6; --bad:#FF7A6B; --text-2:#A9B8CA;
+  --surface:linear-gradient(160deg,rgba(62,98,145,.55),rgba(36,62,98,.55)); --edge:rgba(255,255,255,.09);
+  --display:"Plus Jakarta Sans","Segoe UI",system-ui,sans-serif;
+  --body:"Atkinson Hyperlegible","Segoe UI",system-ui,sans-serif;
+  box-sizing:border-box;
+  padding-top:env(safe-area-inset-top,0px); padding-bottom:env(safe-area-inset-bottom,0px);
+  background:var(--deck);
+}
+*,*::before,*::after{box-sizing:inherit}
+html,body{height:100%;margin:0;overflow:hidden;overscroll-behavior:none}
+body{background:var(--deck);color:var(--fog);font-family:var(--body);font-size:16px;line-height:1.45;-webkit-font-smoothing:antialiased;-webkit-tap-highlight-color:transparent;user-select:none;-webkit-user-select:none}
+button,input,select,textarea{font:inherit;color:inherit}
+button{cursor:pointer}
+textarea,input{user-select:text;-webkit-user-select:text}
+:focus-visible{outline:3px solid var(--accent);outline-offset:2px;border-radius:8px}
+
+/* App shell */
+.app{height:100%;max-width:560px;margin:0 auto;display:flex;flex-direction:column}
+.top{flex:none;display:flex;align-items:center;gap:12px;padding:12px 20px 10px}
+.lamp{flex:none;width:40px;height:40px;border-radius:50%;background:radial-gradient(circle at 35% 30%,#3a5478,#1b2f4b 70%);border:2px solid #34507a}
+.lamp.on{background:radial-gradient(circle at 35% 30%,#fff3d6,var(--lamp) 55%,#e08f14);box-shadow:0 0 22px 6px var(--lamp-glow),0 0 60px 16px rgba(255,181,71,.16);border-color:#ffd08a}
+.top h1{white-space:nowrap;font-family:var(--display);font-weight:800;font-size:22px;margin:0;letter-spacing:-.02em;line-height:1}
+.chip{white-space:nowrap;margin-left:auto;display:flex;align-items:center;gap:6px;background:var(--surface);border:1px solid var(--edge);border-radius:999px;padding:5px 12px 5px 8px;font-size:13px;color:var(--text-2)}
+.chip b{font-family:var(--display);font-weight:800;font-size:17px;color:var(--fog)}
+.chip svg{width:20px;height:20px;color:#5d7392}
+@media (max-width:420px){.chip-l{display:none}.chip{padding:5px 12px 5px 9px}}
+.chip.hot{background:linear-gradient(135deg,rgba(255,122,69,.28),rgba(255,181,71,.18));border-color:rgba(255,150,80,.5)}
+.chip.hot svg{color:#FF8A3D;filter:drop-shadow(0 0 6px rgba(255,120,50,.8))}
+.iconbtn{flex:none;width:38px;height:38px;border-radius:50%;border:0;background:var(--panel);display:grid;place-items:center;color:var(--steel)}
+.iconbtn svg{width:20px;height:20px}
+main{flex:1;min-height:0;overflow-y:auto;padding:8px 20px 16px}
+main > section{min-height:100%;display:flex;flex-direction:column}
+.screen{flex:1;display:flex;flex-direction:column;gap:16px}
+section[hidden]{display:none}
+.tabbar{flex:none;display:flex;border-top:1px solid #2b4466;background:#132339}
+.tabbar button{flex:1;display:flex;flex-direction:column;align-items:center;gap:2px;padding:8px 0 7px;background:none;border:0;color:var(--steel);font-size:11.5px;font-weight:700}
+.tabbar svg{width:24px;height:24px}
+.tabbar button[aria-selected="true"]{color:var(--accent)}
+.tabbar button[aria-selected="true"] svg{filter:drop-shadow(0 0 6px var(--accent-glow))}
+
+/* Building blocks */
+h2{font-family:var(--display);font-weight:800;font-size:25px;margin:0;letter-spacing:-.01em;line-height:1.15}
+h3{font-family:var(--display);font-weight:800;font-size:18px;margin:0}
+p{margin:0}
+.muted{color:var(--text-2)}
+.small{font-size:14px}
+.card{background:var(--surface);border:1px solid var(--edge);-webkit-backdrop-filter:blur(12px);backdrop-filter:blur(12px);border-radius:20px;padding:20px}
+.grow{flex:1;min-height:0}
+.row{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+.between{justify-content:space-between;flex-wrap:nowrap}
+.msg{text-align:center;color:var(--fog);font-weight:700}
+.msg .muted{font-weight:400}
+.msg.win b{color:var(--accent)}
+.btn{background:var(--accent);color:var(--accent-ink);border:0;border-radius:16px;padding:16px 22px;font-family:var(--display);font-weight:800;font-size:17px;box-shadow:0 6px 22px -6px var(--accent-glow)}
+.btn:active{transform:translateY(1px)}
+.btn.block{width:100%;flex:none}
+.btn.ghost{background:transparent;color:var(--fog);border:2px solid #3b5a85;box-shadow:none}
+.btn.small{padding:7px 13px;font-size:14px;border-radius:10px}
+.link{background:none;border:0;color:var(--steel);font-weight:700;padding:4px 0}
+
+.pat{display:inline-flex;align-items:center;gap:5px;vertical-align:middle}
+.pat i{display:block;height:9px;background:currentColor;border-radius:5px}
+.pat i.d{width:9px}.pat i.h{width:27px}
+.pat.big{gap:10px}.pat.big i{height:16px;border-radius:8px}.pat.big i.d{width:16px}.pat.big i.h{width:48px}
+.pat.sm{gap:3px}.pat.sm i{height:6px}.pat.sm i.d{width:6px}.pat.sm i.h{width:16px}
+
+.seg{display:flex;background:#152740;border-radius:12px;padding:4px;gap:4px}
+.seg button{flex:1;border:0;background:none;padding:8px 10px;border-radius:9px;font-weight:700;color:var(--steel)}
+.seg button[aria-pressed="true"]{background:var(--panel-2);color:var(--fog)}
+
+/* Learn */
+.tape{flex:none;display:flex;gap:8px;overflow-x:auto;scrollbar-width:none;padding:6px 4px 4px}
+.tape::-webkit-scrollbar{display:none}
+.tape button{position:relative;flex:none;width:40px;height:40px;border-radius:12px;border:0;display:grid;place-items:center;font-family:var(--display);font-weight:800;font-size:16px}
+.tape .done{background:rgba(46,230,182,.14);color:var(--fog);box-shadow:inset 0 0 0 1.5px rgba(46,230,182,.45)}
+.tape .done .ck{position:absolute;top:-5px;right:-5px;width:16px;height:16px;border-radius:50%;background:var(--accent);color:var(--accent-ink);display:grid;place-items:center;box-shadow:0 0 8px var(--accent-glow)}
+.tape .ck svg{width:10px;height:10px}
+.tape .cur{background:var(--accent);color:var(--accent-ink);animation:pulse 1.8s ease-in-out infinite}
+.tape .lock{background:rgba(255,255,255,.04);color:#4f6685}
+.tape .lock svg{width:16px;height:16px}
+@keyframes pulse{0%,100%{box-shadow:0 0 0 0 var(--accent-glow)}50%{box-shadow:0 0 0 7px rgba(46,230,182,0)}}
+.meet{display:flex;gap:14px;align-items:center;justify-content:center;padding:4px 0}
+.meet button{flex:1;max-width:240px;padding:26px 16px 20px;background:radial-gradient(120% 90% at 50% 0%,rgba(46,230,182,.16),transparent 60%),linear-gradient(165deg,#34598A,#243F66);border:1px solid rgba(255,255,255,.12);box-shadow:0 18px 40px -18px rgba(0,0,0,.6);border-radius:26px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:16px}
+.meet b{font-family:var(--display);font-weight:800;font-size:84px;line-height:.9}
+.meet small{color:var(--text-2)}
+.intro p{margin-bottom:10px}
+
+/* Drill */
+.drill-top{display:flex;align-items:baseline;gap:10px}
+.drill-top .count{margin-left:auto}
+.bar{flex:none;height:6px;background:#223a5c;border-radius:3px;overflow:hidden}
+.bar div{height:100%;background:var(--accent);width:0;transition:width .25s}
+.stage{min-height:110px;width:100%;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;text-align:center;border-radius:22px;background:var(--surface);border:1px solid var(--edge);padding:14px}
+.stage .big{font-family:var(--display);font-size:60px;font-weight:800;line-height:1}
+.stage.good{box-shadow:inset 0 0 0 3px var(--good)}
+.stage.bad{box-shadow:inset 0 0 0 3px var(--bad)}
+.keys{flex:none;display:grid;gap:8px}
+.keys button{height:48px;border-radius:14px;border:1px solid var(--edge);background:var(--panel-2);font-family:var(--display);font-weight:800;font-size:21px}
+.keys.dense button{height:42px;font-size:19px}
+.keys button:active{background:#33547f}
+input[type=text],textarea{width:100%;background:#152740;border:2px solid #34507a;border-radius:12px;padding:11px 13px;font-size:18px;letter-spacing:.04em}
+textarea{font-size:16px;resize:none;height:76px}
+.out{font-size:19px;letter-spacing:.08em;word-break:break-word;min-height:28px}
+
+/* Daily */
+.big-num{font-family:var(--display);font-size:42px;font-weight:800;line-height:1}
+.goalbar{height:12px;background:#223a5c;border-radius:6px;overflow:hidden;margin:10px 0 14px}
+.goalbar div{height:100%;background:var(--accent);transition:width .3s}
+.week{display:grid;grid-template-columns:repeat(7,1fr);gap:6px}
+.week div{text-align:center;font-size:12px;color:var(--steel)}
+.week i{display:block;margin:0 auto 4px;width:30px;height:30px;border-radius:50%;background:#223a5c}
+.week i.part{background:radial-gradient(circle,var(--accent) 0 30%,#223a5c 32%)}
+.week i.done{background:var(--accent);box-shadow:0 0 12px var(--accent-glow)}
+.weak{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}
+.weak span{background:var(--panel-2);border-radius:10px;padding:5px 11px;font-family:var(--display);font-weight:700}
+.weak em{font-style:normal;color:var(--steel);font-weight:400;font-family:var(--body);font-size:13px;margin-left:5px}
+.label{font-size:14px;font-weight:700;color:var(--steel);margin:14px 0 6px}
+
+/* Send */
+.target{font-family:var(--display);font-size:40px;font-weight:800;letter-spacing:.06em;line-height:1.1}
+.keyer{min-height:120px;width:100%;border-radius:26px;border:0;background:linear-gradient(#c79a3c,#9c7424);color:#2a1a00;font-family:var(--display);font-weight:800;font-size:21px;box-shadow:0 7px 0 #6b4f16;touch-action:none;margin-bottom:7px}
+.keyer.down{transform:translateY(6px);box-shadow:0 1px 0 #6b4f16}
+
+/* Tools */
+.chart{display:grid;grid-template-columns:repeat(5,1fr);gap:6px;align-content:start}
+.chart button{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:5px;background:var(--panel);border:0;border-radius:12px;height:48px}
+.chart b{font-family:var(--display);font-size:19px;line-height:1}
+
+/* Settings */
+label.set{display:block;margin-bottom:9px}
+label.set span{display:flex;justify-content:space-between;font-weight:700;font-size:15px}
+label.set output{color:var(--accent)}
+label.set small{display:block;color:var(--steel);font-size:13px;margin-bottom:2px}
+input[type=range]{width:100%;accent-color:var(--accent);margin:4px 0 0}
+
+@media (max-height:640px){.screen{gap:12px}.btn.block{padding:14px 20px}.meet button{padding:18px 14px 14px;gap:12px}.meet b{font-size:60px}.tape button{width:36px;height:36px}label.set{margin-bottom:6px}label.set small{display:none}.meet b{font-size:64px}.keys button{height:42px}.keys.dense button{height:37px;font-size:17px}.stage .big{font-size:48px}.card{padding:13px}.big-num{font-size:32px}}
+
+/* Welcome */
+.welcome{position:fixed;inset:0;z-index:50;background:radial-gradient(120% 70% at 50% 28%,#21406a 0%,var(--deck) 62%);display:flex;justify-content:center;padding:env(safe-area-inset-top,0px) 0 env(safe-area-inset-bottom,0px);transition:opacity .4s,transform .4s}
+.welcome.out{opacity:0;transform:scale(1.03);pointer-events:none}
+.welcome[hidden]{display:none}
+.w-in{width:100%;max-width:520px;display:flex;flex-direction:column;align-items:center;text-align:center;padding:28px 24px 22px;gap:14px}
+.w-in h1{font-family:var(--display);font-weight:800;font-size:clamp(30px,8.5vw,40px);line-height:1.08;letter-spacing:-.02em;margin:0}
+.w-in .sub{color:var(--text-2);font-size:17px;max-width:30ch;margin:0 auto}
+.w-art{flex:1;min-height:0;width:100%;position:relative;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px}
+.w-rows{position:absolute;inset:0;display:flex;flex-direction:column;justify-content:space-between;padding:6px 0;opacity:.22;pointer-events:none}
+.w-rows div{display:flex;gap:14px;justify-content:center;color:var(--accent)}
+.w-rows div:nth-child(2){color:var(--lamp);justify-content:flex-start}
+.w-rows div:nth-child(3){justify-content:flex-end}
+.w-lamp{width:clamp(78px,24vw,104px);aspect-ratio:1;border-radius:50%;background:radial-gradient(circle at 35% 30%,#3a5478,#1b2f4b 70%);border:3px solid #34507a;position:relative;z-index:1;transition:background .03s,box-shadow .03s}
+.w-lamp.on{background:radial-gradient(circle at 35% 30%,#fff3d6,var(--lamp) 55%,#e08f14);border-color:#ffd08a;box-shadow:0 0 40px 12px var(--lamp-glow),0 0 110px 34px rgba(255,181,71,.2)}
+.w-key{width:min(76%,300px);height:auto;position:relative;z-index:1}
+.w-key .lever{transform-origin:178px 55px;transform:rotate(3deg);transition:transform .04s}
+.w-key.down .lever{transform:rotate(-1deg)}
+.w-feat{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;width:100%}
+.w-feat div{display:flex;flex-direction:column;align-items:center;gap:8px;font-size:13.5px;line-height:1.25;color:var(--fog)}
+.w-feat i{width:46px;height:46px;border-radius:14px;display:grid;place-items:center;background:var(--surface);border:1px solid var(--edge);color:var(--accent)}
+.w-feat svg{width:22px;height:22px}
+.w-note{font-size:14px;color:var(--text-2);margin:0}
+@media (max-height:640px){.w-in{padding:18px 22px 16px;gap:10px}.w-in .sub{font-size:15px}.w-feat i{width:40px;height:40px}}
+@media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
+</style>
+</head>
+<body>
+<div class="app">
+  <header class="top">
+    <div class="lamp" id="lamp" aria-hidden="true"></div>
+    <h1>Morse Shikho</h1>
+    <div class="chip" id="streakChip" title="Day streak"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2c.6 3.4-1.2 5.3-2.8 7.1C7.7 10.8 6 12.6 6 15.4 6 19 8.7 22 12 22s6-2.9 6-6.6c0-2.2-.9-3.9-2-5.3-.3 1.4-1 2.4-2.1 2.9.4-3.7-.6-8.4-1.9-11z"/></svg><b id="streakNum">0</b><span class="chip-l">day streak</span></div>
+    <button class="iconbtn" id="gear" aria-label="Settings"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/></svg></button>
+  </header>
+
+  <main id="main">
+    <section id="learn"></section>
+    <section id="daily" hidden></section>
+    <section id="practice" hidden></section>
+    <section id="send" hidden></section>
+    <section id="tools" hidden></section>
+    <section id="settings" hidden></section>
+  </main>
+
+  <nav class="tabbar" id="tabs" role="tablist">
+    <button role="tab" data-tab="learn" aria-selected="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 4h7a3 3 0 0 1 3 3v13a2 2 0 0 0-2-2H2z"/><path d="M22 4h-7a3 3 0 0 0-3 3v13a2 2 0 0 1 2-2h8z"/></svg>Learn</button>
+    <button role="tab" data-tab="daily" aria-selected="false"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="3"/><path d="M16 2v4M8 2v4M3 10h18"/><path d="m9 16 2 2 4-4"/></svg>Daily</button>
+    <button role="tab" data-tab="practice" aria-selected="false"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 18v-6a9 9 0 0 1 18 0v6"/><path d="M21 19a2 2 0 0 1-2 2h-1v-6h3zM3 19a2 2 0 0 0 2 2h1v-6H3z"/></svg>Practice</button>
+    <button role="tab" data-tab="send" aria-selected="false"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="15" width="18" height="6" rx="2"/><path d="M6 15l2-5h8l2 5"/><circle cx="12" cy="6" r="3"/></svg>Send</button>
+    <button role="tab" data-tab="tools" aria-selected="false"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/></svg>Chart</button>
+  </nav>
+</div>
+
+<div class="welcome" id="welcome" hidden>
+  <div class="w-in">
+    <h1>Welcome to<br>Morse Shikho</h1>
+    <p class="sub">Learn Morse code by ear, a few minutes a day.</p>
+    <div class="w-art" aria-hidden="true">
+      <div class="w-rows" id="wRows"></div>
+      <div class="w-lamp" id="wLamp"></div>
+      <svg class="w-key" id="wKey" viewBox="0 0 240 110">
+        <defs><linearGradient id="brass" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#e6bf62"/><stop offset="1" stop-color="#a87a22"/></linearGradient></defs>
+        <ellipse cx="120" cy="102" rx="104" ry="6" fill="rgba(0,0,0,.35)"/>
+        <rect x="18" y="80" width="204" height="18" rx="7" fill="#5a3f10"/>
+        <rect x="26" y="71" width="188" height="12" rx="5" fill="url(#brass)"/>
+        <rect x="58" y="62" width="12" height="11" rx="2" fill="#c79a3c"/>
+        <rect x="170" y="50" width="16" height="23" rx="3" fill="#c79a3c"/>
+        <g class="lever">
+          <rect x="38" y="50" width="152" height="8" rx="4" fill="url(#brass)"/>
+          <rect x="45" y="40" width="8" height="12" fill="#8a6420"/>
+          <ellipse cx="49" cy="38" rx="24" ry="9" fill="#141b26"/>
+          <ellipse cx="45" cy="35" rx="12" ry="3" fill="rgba(255,255,255,.18)"/>
+        </g>
+        <circle cx="178" cy="55" r="4" fill="#5a3f10"/>
+      </svg>
+    </div>
+    <div class="w-feat">
+      <div><i><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 4h7a3 3 0 0 1 3 3v13a2 2 0 0 0-2-2H2z"/><path d="M22 4h-7a3 3 0 0 0-3 3v13a2 2 0 0 1 2-2h8z"/></svg></i>One letter at a time</div>
+      <div><i><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 18v-6a9 9 0 0 1 18 0v6"/><path d="M21 19a2 2 0 0 1-2 2h-1v-6h3zM3 19a2 2 0 0 0 2 2h1v-6H3z"/></svg></i>Learn by sound</div>
+      <div><i><svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2c.6 3.4-1.2 5.3-2.8 7.1C7.7 10.8 6 12.6 6 15.4 6 19 8.7 22 12 22s6-2.9 6-6.6c0-2.2-.9-3.9-2-5.3-.3 1.4-1 2.4-2.1 2.9.4-3.7-.6-8.4-1.9-11z"/></svg></i>Daily streaks</div>
+    </div>
+    <p class="w-note">No experience needed. Turn your sound on.</p>
+    <button class="btn block" id="wGo">Get started</button>
+  </div>
+</div>
+
+<script>
+/* ---------- Data ---------- */
+const MORSE={A:'.-',B:'-...',C:'-.-.',D:'-..',E:'.',F:'..-.',G:'--.',H:'....',I:'..',J:'.---',K:'-.-',L:'.-..',M:'--',N:'-.',O:'---',P:'.--.',Q:'--.-',R:'.-.',S:'...',T:'-',U:'..-',V:'...-',W:'.--',X:'-..-',Y:'-.--',Z:'--..',
+'0':'-----','1':'.----','2':'..---','3':'...--','4':'....-','5':'.....','6':'-....','7':'--...','8':'---..','9':'----.',
+'.':'.-.-.-',',':'--..--','?':'..--..','/':'-..-.','=':'-...-'};
+const REV=Object.fromEntries(Object.entries(MORSE).map(([k,v])=>[v,k]));
+const KOCH=['K','M','U','R','E','S','N','A','P','T','L','W','I','.','J','Z','=','F','O','Y',',','V','G','5','/','Q','9','2','H','3','8','B','?','4','7','C','1','D','6','0','X'];
+const WORDS=('THE AND FOR ARE BUT NOT YOU ALL ANY CAN HER WAS ONE OUR OUT DAY GET HAS HIM HIS HOW MAN NEW NOW OLD SEE TWO WAY WHO DID LET PUT SAY SHE TOO USE '+
+'SOS CQ DE RST QTH NAME RIG ANT WX TEST MORSE RADIO SIGNAL KEY TONE SPEED CODE HELLO WORLD GOOD NIGHT LEARN DAILY '+
+'MUSE SURE RUNS MEN SUN RUN NURSE TEA SEAT PASTE STAMP TRUMP PALM MAPLE SUPER TUNE WALK TAPE LAMP RAIN RIPE WIRE').split(' ');
+
+/* ---------- State ---------- */
+const DEFAULTS={level:2,stats:{},days:{},introDone:false,welcomed:false,
+  settings:{wpm:20,eff:12,freq:650,vol:0.8,sendWpm:12,goal:50}};
+let S=load();
+function load(){try{const s=JSON.parse(localStorage.getItem('morse-shikho')||'null');
+  if(s){return {...DEFAULTS,...s,settings:{...DEFAULTS.settings,...(s.settings||{})}}}}catch(e){}
+  return JSON.parse(JSON.stringify(DEFAULTS))}
+function save(){try{localStorage.setItem('morse-shikho',JSON.stringify(S))}catch(e){}}
+function dayKey(d=new Date()){return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0')}
+function unlocked(){return KOCH.slice(0,S.level)}
+function record(ch,ok){
+  const st=S.stats[ch]||(S.stats[ch]={n:0,c:0,r:[]});
+  st.n++; if(ok)st.c++; st.r.push(ok?1:0); if(st.r.length>20)st.r.shift();
+  const k=dayKey(); S.days[k]=(S.days[k]||0)+1; save(); renderStreak();
+}
+function acc(ch){const st=S.stats[ch]; if(!st||!st.r.length)return null; return st.r.reduce((a,b)=>a+b,0)/st.r.length}
+function streak(){let n=0;const d=new Date();
+  if((S.days[dayKey(d)]||0)<S.settings.goal)d.setDate(d.getDate()-1);
+  while((S.days[dayKey(d)]||0)>=S.settings.goal){n++;d.setDate(d.getDate()-1)}
+  return n}
+function renderStreak(){const n=streak();document.getElementById('streakNum').textContent=n;document.getElementById('streakChip').classList.toggle('hot',n>0)}
+
+/* ---------- Audio + lamp ---------- */
+let ctx=null, timers=[], pending=null, liveNodes=[];
+const lampEl=document.getElementById('lamp');
+// iPhone: play through the silent switch (iOS 17+)
+try{if(navigator.audioSession)navigator.audioSession.type='playback'}catch(e){}
+function ac(){
+  if(!ctx)ctx=new (window.AudioContext||window.webkitAudioContext)();
+  if(ctx.state!=='running')ctx.resume().catch(()=>{});
+  return ctx}
+// Unlock audio on the first touch/click (required by iOS and Android browsers)
+let audioReady=false, silentEl=null;
+function silentWavURL(){ // 0.5s of silence, used to switch older iPhones to media playback
+  const n=4000,b=new ArrayBuffer(44+n*2),v=new DataView(b),w=(o,t)=>[...t].forEach((c,i)=>v.setUint8(o+i,c.charCodeAt(0)));
+  w(0,'RIFF');v.setUint32(4,36+n*2,true);w(8,'WAVE');w(12,'fmt ');v.setUint32(16,16,true);v.setUint16(20,1,true);v.setUint16(22,1,true);
+  v.setUint32(24,8000,true);v.setUint32(28,16000,true);v.setUint16(32,2,true);v.setUint16(34,16,true);w(36,'data');v.setUint32(40,n*2,true);
+  return URL.createObjectURL(new Blob([b],{type:'audio/wav'}))}
+function unlockAudio(){
+  const c=ac();
+  try{const src=c.createBufferSource();src.buffer=c.createBuffer(1,1,22050);src.connect(c.destination);src.start(0)}catch(e){}
+  if(!navigator.audioSession&&!silentEl){try{silentEl=new Audio(silentWavURL());silentEl.loop=true;silentEl.setAttribute('playsinline','');silentEl.play().catch(()=>{})}catch(e){}}
+  if(c.state==='running')audioReady=true;
+}
+['pointerdown','touchend','click','keydown'].forEach(ev=>document.addEventListener(ev,unlockAudio,{capture:true,passive:true}));
+document.addEventListener('visibilitychange',()=>{if(!document.hidden&&ctx&&ctx.state!=='running')ctx.resume().catch(()=>{})});
+function timing(wpm=S.settings.wpm,eff=S.settings.eff){
+  const u=1.2/wpm; let cg=3*u, wg=7*u;
+  if(eff<wpm){const ta=(60*wpm-37.2*eff)/(eff*wpm); cg=3*ta/19; wg=7*ta/19}
+  return {u,cg,wg}}
+function tone(t,dur){
+  const c=ac(),o=c.createOscillator(),g=c.createGain(),v=S.settings.vol*0.9;
+  o.type='sine';o.frequency.value=S.settings.freq;
+  g.gain.setValueAtTime(0,t);g.gain.linearRampToValueAtTime(v,t+.005);
+  g.gain.setValueAtTime(v,t+dur-.005);g.gain.linearRampToValueAtTime(0,t+dur);
+  o.connect(g).connect(c.destination);o.start(t);o.stop(t+dur+.02);liveNodes.push(o);
+  const now=c.currentTime;
+  timers.push(setTimeout(()=>lampEl.classList.add('on'),(t-now)*1000));
+  timers.push(setTimeout(()=>lampEl.classList.remove('on'),(t+dur-now)*1000));
+}
+function stopAll(){
+  timers.forEach(clearTimeout);timers=[];liveNodes.forEach(o=>{try{o.stop()}catch(e){}});liveNodes=[];
+  lampEl.classList.remove('on'); if(pending){const p=pending;pending=null;p(false)}
+}
+function play(text){
+  stopAll(); const c=ac(); const {u,cg,wg}=timing(); let t=c.currentTime+.08;
+  const words=String(text).toUpperCase().trim().split(/\s+/);
+  words.forEach((w,wi)=>{
+    [...w].forEach((ch,ci)=>{
+      const code=MORSE[ch]; if(!code)return;
+      [...code].forEach((s,si)=>{const d=s==='.'?u:3*u; tone(t,d); t+=d; if(si<code.length-1)t+=u});
+      if(ci<w.length-1)t+=cg;
+    });
+    if(wi<words.length-1)t+=wg;
+  });
+  return new Promise(res=>{pending=res;timers.push(setTimeout(()=>{if(pending===res){pending=null;res(true)}},(t-c.currentTime)*1000+60))});
+}
+
+/* ---------- Helpers ---------- */
+const $=id=>document.getElementById(id);
+function pat(code,size){return `<span class="pat${size?' '+size:''}" aria-label="${code.replace(/\./g,'dit ').replace(/-/g,'dah ')}">`+[...code].map(s=>`<i class="${s==='.'?'d':'h'}"></i>`).join('')+'</span>'}
+function esc(s){return String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]))}
+function weightedPick(pool,avoid){
+  const w=pool.map(ch=>{const a=acc(ch),n=(S.stats[ch]||{}).n||0;return (ch===avoid?.2:1)*(1+(a===null?2:(1-a)*5)+(n<5?1.5:0))});
+  let r=Math.random()*w.reduce((a,b)=>a+b,0);for(let i=0;i<pool.length;i++){r-=w[i];if(r<=0)return pool[i]}return pool[0]}
+function randGroup(pool,len){return Array.from({length:len},()=>pool[Math.floor(Math.random()*pool.length)]).join('')}
+function wordsFor(pool){const set=new Set(pool);return WORDS.filter(w=>[...w].every(c=>set.has(c)))}
+function delay(ms){return new Promise(r=>timers.push(setTimeout(r,ms)))}
+const LOCK='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><rect x="5" y="11" width="14" height="10" rx="2.5"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></svg>';
+const CHECK='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"><path d="m5 12 5 5 9-10"/></svg>';
+function keyCols(n){return n<=6?n:n<=12?4:n<=24?6:7}
+
+/* ---------- Letter drill ---------- */
+let activeDrill=null;
+class Drill{
+  constructor(el,{title,pool,count,newChars=[],onDone}){
+    Object.assign(this,{el,title,pool,count,newChars,onDone,i:0,right:0,cur:null,locked:true,last:null});
+    el.innerHTML=`<div class="screen">
+      <div class="drill-top"><h3>${esc(title)}</h3><span class="muted small count" data-k="count"></span><button class="link" data-k="quit">End</button></div>
+      <div class="bar"><div data-k="bar"></div></div>
+      <button class="stage grow" data-k="stage"></button>
+      <div class="keys${pool.length>28?' dense':''}" data-k="keys" style="grid-template-columns:repeat(${keyCols(pool.length)},1fr)">${pool.map(c=>`<button data-ch="${esc(c)}">${esc(c)}</button>`).join('')}</div></div>`;
+    this.q=k=>el.querySelector(`[data-k="${k}"]`);
+    this.q('keys').addEventListener('click',e=>{const b=e.target.closest('button');if(b)this.answer(b.dataset.ch)});
+    this.q('stage').onclick=()=>this.replay();
+    this.q('quit').onclick=()=>this.finish(true);
+    activeDrill=this; this.next();
+  }
+  replay(){if(this.cur&&!this.locked)play(this.cur)}
+  async next(){
+    if(activeDrill!==this)return;
+    if(this.i>=this.count)return this.finish();
+    this.q('count').textContent=`${this.i+1} of ${this.count}`;
+    this.q('bar').style.width=(this.i/this.count*100)+'%';
+    const st=this.q('stage');st.className='stage grow';st.innerHTML='<span class="muted">Listen…</span>';
+    this.cur=(this.newChars.length&&Math.random()<.4)?this.newChars[Math.floor(Math.random()*this.newChars.length)]:weightedPick(this.pool,this.last);
+    this.last=this.cur; this.locked=false; await play(this.cur);
+    if(!this.locked&&activeDrill===this)st.innerHTML='<h3>Which letter was it?</h3><span class="muted small">Tap here to hear it again</span>';
+  }
+  async answer(ch){
+    if(this.locked||activeDrill!==this)return; this.locked=true;
+    const ok=ch===this.cur; record(this.cur,ok); if(ok)this.right++; this.i++;
+    const st=this.q('stage'); st.className='stage grow '+(ok?'good':'bad');
+    st.innerHTML=`<div class="big">${esc(this.cur)}</div>${pat(MORSE[this.cur],'big')}<div class="muted small">${ok?'Correct':'You picked '+esc(ch)}</div>`;
+    if(ok){await delay(650)}else{await delay(300);await play(this.cur);await delay(700)}
+    this.next();
+  }
+  finish(quit){
+    if(activeDrill!==this)return; activeDrill=null; stopAll();
+    const done=this.i, pct=done?Math.round(this.right/done*100):0;
+    this.onDone&&this.onDone({pct,done,quit:!!quit&&done<this.count,right:this.right});
+  }
+}
+
+/* ---------- Word drill ---------- */
+class WordDrill{
+  constructor(el,{title,items,onDone}){
+    Object.assign(this,{el,title,items,onDone,i:0,right:0});
+    el.innerHTML=`<div class="screen">
+      <div class="drill-top"><h3>${esc(title)}</h3><span class="muted small count" data-k="count"></span><button class="link" data-k="quit">End</button></div>
+      <div class="bar"><div data-k="bar"></div></div>
+      <button class="stage grow" data-k="stage"></button>
+      <input type="text" data-k="in" autocomplete="off" autocapitalize="characters" spellcheck="false" placeholder="Type what you heard">
+      <button class="btn block" data-k="check">Check</button></div>`;
+    this.q=k=>el.querySelector(`[data-k="${k}"]`);
+    this.q('check').onclick=()=>this.check();
+    this.q('in').addEventListener('keydown',e=>{if(e.key==='Enter'){e.preventDefault();this.check()}});
+    this.q('stage').onclick=()=>{if(!this.checked)play(this.cur)};
+    this.q('quit').onclick=()=>this.finish(true);
+    activeDrill=this; this.next();
+  }
+  next(){
+    if(activeDrill!==this)return; if(this.i>=this.items.length)return this.finish();
+    this.cur=this.items[this.i]; this.checked=false;
+    this.q('count').textContent=`${this.i+1} of ${this.items.length}`;
+    this.q('bar').style.width=(this.i/this.items.length*100)+'%';
+    const st=this.q('stage');st.className='stage grow';st.innerHTML='<h3>Listen and type the word</h3><span class="muted small">Tap here to hear it again</span>';
+    this.q('in').value=''; play(this.cur);
+  }
+  async check(){
+    if(this.checked||activeDrill!==this)return; this.checked=true;
+    const g=this.q('in').value.toUpperCase().replace(/\s+/g,''), t=this.cur;
+    [...t].forEach((c,k)=>record(c,g[k]===c));
+    const ok=g===t; if(ok)this.right++; this.i++;
+    const st=this.q('stage');st.className='stage grow '+(ok?'good':'bad');
+    st.innerHTML=`<div class="big" style="font-size:42px">${[...t].map((c,k)=>`<span style="color:${g[k]===c?'var(--fog)':'var(--bad)'}">${esc(c)}</span>`).join('')}</div><div class="muted small">${ok?'Correct':'You typed '+esc(g||'nothing')}</div>`;
+    await delay(ok?800:1600); this.next();
+  }
+  finish(quit){if(activeDrill!==this)return;activeDrill=null;stopAll();
+    this.onDone&&this.onDone({pct:this.i?Math.round(this.right/this.i*100):0,done:this.i,quit:!!quit})}
+}
+
+document.addEventListener('keydown',e=>{
+  if(!(activeDrill instanceof Drill))return;
+  if(e.target.tagName==='INPUT'||e.target.tagName==='TEXTAREA')return;
+  if(e.key===' '){e.preventDefault();activeDrill.replay();return}
+  const k=e.key.toUpperCase(); if(activeDrill.pool.includes(k)){e.preventDefault();activeDrill.answer(k)}
+});
+
+/* ---------- Learn ---------- */
+function renderLearn(msg){
+  const el=$('learn');
+  if(!S.introDone){
+    el.innerHTML=`<div class="screen">
+      <div class="card grow intro">
+        <h2 style="margin-bottom:10px">Start here</h2>
+        <p>Morse code uses two sounds: a short <b>dit</b> and a long <b>dah</b>. Each letter is a rhythm, like a tiny tune.</p>
+        <p>Don't count dots. Learn each letter as a sound. You'll hear letters at real speed from day one and unlock a new one each time you score 90%.</p>
+        <div class="row" style="margin-top:14px">
+          <button class="btn ghost small" data-play="E">Hear E</button>
+          <button class="btn ghost small" data-play="T">Hear T</button>
+          <button class="btn ghost small" data-play="SOS">Hear SOS</button>
+        </div>
+      </div>
+      <button class="btn block" id="introDone">Start lesson 1</button></div>`;
+    $('introDone').onclick=()=>{S.introDone=true;save();renderLearn()};
+    return;
+  }
+  const lesson=S.level-1, all=S.level>=KOCH.length;
+  const fresh=all?[]:(S.level===2?['K','M']:[KOCH[S.level-1]]);
+  el.innerHTML=`<div class="screen">
+    <div class="row between"><h2>${all?'All letters unlocked':'Lesson '+lesson}</h2><span class="muted small">${S.level} of ${KOCH.length} letters</span></div>
+    <div class="tape" id="tape">${KOCH.map((c,i)=>{
+      if(i>=S.level)return `<button class="lock" disabled aria-label="Locked">${LOCK}</button>`;
+      if(i===S.level-1&&!all)return `<button class="cur" data-play="${esc(c)}" aria-label="${esc(c)}, newest letter">${esc(c)}</button>`;
+      return `<button class="done" data-play="${esc(c)}" aria-label="${esc(c)}, learned">${esc(c)}<span class="ck">${CHECK}</span></button>`}).join('')}</div>
+    ${msg||''}
+    <div class="meet grow">${all?`<p class="muted" style="text-align:center;max-width:30ch">You know all ${KOCH.length} characters. Keep them sharp with daily practice and raise your spacing speed in settings.</p>`:
+      fresh.map(c=>`<button data-play="${esc(c)}"><b>${esc(c)}</b>${pat(MORSE[c],'big')}<small>Tap to hear</small></button>`).join('')}</div>
+    ${all||msg?'':'<p class="muted small" style="text-align:center">Score 90% on 20 questions to unlock the next letter.</p>'}
+    <button class="btn block" id="lessonGo">${all?'Review all letters':'Start lesson drill'}</button></div>`;
+  const tape=$('tape'), nx=tape.querySelector('.cur')||tape.querySelector('.lock')||tape.lastElementChild;
+  tape.scrollLeft=nx.offsetLeft-tape.clientWidth/2;
+  $('lessonGo').onclick=()=>{
+    new Drill(el,{title:all?'Review':'Lesson '+lesson,pool:unlocked(),count:20,newChars:fresh,onDone:({pct,quit})=>{
+      if(quit){renderLearn();return}
+      if(pct>=90&&!all){S.level++;save();play(KOCH[S.level-1]);renderLearn(`<p class="msg win"><b>${pct}%</b> <span class="muted">New letter unlocked:</span> ${KOCH[S.level-1]}</p>`)}
+      else renderLearn(all?`<p class="msg">${pct}% <span class="muted">review score</span></p>`:`<p class="msg">${pct}% <span class="muted">You need 90% to unlock the next letter</span></p>`);
+    }});
+  };
+}
+
+/* ---------- Daily ---------- */
+function renderDaily(msg){
+  const today=S.days[dayKey()]||0, goal=S.settings.goal, pct=Math.min(100,today/goal*100);
+  const days=[];for(let i=6;i>=0;i--){const d=new Date();d.setDate(d.getDate()-i);const n=S.days[dayKey(d)]||0;
+    days.push(`<div><i class="${n>=goal?'done':n>0?'part':''}"></i>${d.toLocaleDateString(undefined,{weekday:'narrow'})}</div>`)}
+  const weak=unlocked().filter(c=>acc(c)!==null).sort((a,b)=>acc(a)-acc(b)).slice(0,5);
+  $('daily').innerHTML=`<div class="screen">
+    ${msg?`<p class="msg win">${msg}</p>`:''}
+    <div class="card">
+      <div class="row between"><h2>Today</h2><span class="muted small">${today>=goal?'Goal reached':(goal-today)+' answers to go'}</span></div>
+      <div class="big-num" style="margin-top:10px">${today}<span class="muted" style="font-size:18px;font-weight:500"> / ${goal}</span></div>
+      <div class="goalbar"><div style="width:${pct}%"></div></div>
+      <div class="week">${days.join('')}</div>
+    </div>
+    <div class="card"><h3>Needs work</h3>
+      ${weak.length?`<div class="weak">${weak.map(c=>`<span>${esc(c)}<em>${Math.round(acc(c)*100)}%</em></span>`).join('')}</div>`:'<p class="muted small" style="margin-top:6px">Answer a few questions and your trickiest letters will show here.</p>'}</div>
+    <p class="muted small grow" style="text-align:center;display:flex;align-items:flex-end;justify-content:center">About 5 minutes: 25 letters weighted to your weak spots, then 5 words.</p>
+    <button class="btn block" id="dailyGo">Start daily session</button></div>`;
+  $('dailyGo').onclick=()=>{
+    const el=$('daily');
+    new Drill(el,{title:'Daily letters',pool:unlocked(),count:25,onDone:({pct,quit})=>{
+      if(quit){renderDaily();return}
+      let items=wordsFor(unlocked()).sort(()=>Math.random()-.5).slice(0,5);
+      while(items.length<5)items.push(randGroup(unlocked(),3+Math.floor(Math.random()*2)));
+      new WordDrill(el,{title:'Daily words',items,onDone:r=>renderDaily(r.quit?'':`Session done. Letters ${pct}%, words ${r.pct}%.`)});
+    }});
+  };
+}
+
+/* ---------- Practice ---------- */
+let pMode='chars',pPool='mine';
+function segHTML(id,opts,val){return `<div class="seg" data-seg="${id}">${opts.map(([v,l])=>`<button data-v="${v}" aria-pressed="${v===val}">${l}</button>`).join('')}</div>`}
+function renderPractice(res){
+  const el=$('practice');
+  el.innerHTML=`<div class="screen">
+    <div class="card"><h2>Free practice</h2>
+      <p class="muted small" style="margin-top:4px">Every answer counts toward today's goal.</p>
+      <div class="label">Practise with</div>${segHTML('pMode',[['chars','Letters'],['words','Words']],pMode)}
+      <div class="label">Characters</div>${segHTML('pPool',[['mine','My letters'],['all','All 41']],pPool)}
+    </div>
+    <div class="grow" style="display:flex;align-items:center;justify-content:center;flex-direction:column">
+      ${res&&res.done?`<div class="big-num" style="font-size:56px">${res.pct}%</div><p class="muted">${res.done} answered</p>`:''}
+    </div>
+    <button class="btn block" id="pStart">Start practice</button></div>`;
+  el.querySelectorAll('[data-seg]').forEach(sg=>sg.addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;
+    if(sg.dataset.seg==='pMode')pMode=b.dataset.v;else pPool=b.dataset.v;
+    sg.querySelectorAll('button').forEach(x=>x.setAttribute('aria-pressed',x===b))}));
+  $('pStart').onclick=()=>{
+    const pool=pPool==='all'?Object.keys(MORSE):unlocked();
+    if(pMode==='chars')new Drill(el,{title:'Letter practice',pool,count:30,onDone:renderPractice});
+    else{let items=wordsFor(pool).sort(()=>Math.random()-.5).slice(0,10);while(items.length<10)items.push(randGroup(pool,4));
+      new WordDrill(el,{title:'Word practice',items,onDone:renderPractice})}
+  };
+}
+
+/* ---------- Send (keyer) ---------- */
+let kOsc=null,kGain=null,kDown=0,kUp=0,kSym='',kText='',kTimer=null,kTarget='K';
+function kUnit(){return 1.2/S.settings.sendWpm*1000}
+function renderSend(){
+  $('send').innerHTML=`<div class="screen">
+    <div class="card row between"><div><div class="muted small">Send this</div><div class="target" id="sendTarget"></div></div>
+      <button class="btn ghost small" id="sendHear">Hear it</button></div>
+    <div class="card"><div class="row between"><span class="muted small">You sent</span>
+      <span class="row"><button class="link" id="sendClear">Clear</button><button class="link" id="sendSkip" style="margin-left:10px">Skip</button></span></div>
+      <div class="out" id="sendOut"></div></div>
+    <p class="muted small" style="text-align:center">Short press for a dit, long press for a dah. Pause to end a letter.</p>
+    <button class="keyer grow" id="keyer">Press and hold</button>
+    <label class="set" style="margin:0"><span>Keying speed <output id="sendWpmOut">${S.settings.sendWpm} WPM</output></span>
+      <input type="range" id="sendWpm" min="5" max="25" step="1" value="${S.settings.sendWpm}"></label></div>`;
+  const keyer=$('keyer');
+  keyer.addEventListener('pointerdown',e=>{e.preventDefault();keyer.setPointerCapture(e.pointerId);keyDown()});
+  keyer.addEventListener('pointerup',keyUp);keyer.addEventListener('pointercancel',keyUp);
+  keyer.addEventListener('contextmenu',e=>e.preventDefault());
+  $('sendClear').onclick=()=>{kText='';kSym='';showSent()};
+  $('sendSkip').onclick=newTarget;
+  $('sendHear').onclick=()=>play(kTarget);
+  $('sendWpm').oninput=e=>{S.settings.sendWpm=+e.target.value;$('sendWpmOut').textContent=S.settings.sendWpm+' WPM';save()};
+  newTarget();
+}
+function keyDown(){
+  if(kDown)return; stopAll(); const c=ac(); clearTimeout(kTimer);
+  if(kUp&&performance.now()-kUp>kUnit()*5&&kText&&!kText.endsWith(' '))kText+=' ';
+  kDown=performance.now(); $('keyer').classList.add('down'); lampEl.classList.add('on');
+  kOsc=c.createOscillator();kGain=c.createGain();kOsc.frequency.value=S.settings.freq;
+  kGain.gain.setValueAtTime(0,c.currentTime);kGain.gain.linearRampToValueAtTime(S.settings.vol*.9,c.currentTime+.005);
+  kOsc.connect(kGain).connect(c.destination);kOsc.start();
+}
+function keyUp(){
+  if(!kDown)return; const d=performance.now()-kDown; kDown=0; kUp=performance.now();
+  $('keyer').classList.remove('down'); lampEl.classList.remove('on');
+  const c=ac();kGain.gain.setValueAtTime(kGain.gain.value,c.currentTime);kGain.gain.linearRampToValueAtTime(0,c.currentTime+.006);kOsc.stop(c.currentTime+.02);
+  kSym+=d<kUnit()*2?'.':'-'; showSent();
+  kTimer=setTimeout(()=>{kText+=REV[kSym]||'#';kSym='';showSent();checkSend()},kUnit()*2.5);
+}
+function showSent(){$('sendOut').innerHTML=(esc(kText)+(kSym?' '+pat(kSym):''))||'&nbsp;'}
+function newTarget(){const pool=unlocked();const ws=wordsFor(pool);
+  kTarget=Math.random()<.5||!ws.length?pool[Math.floor(Math.random()*pool.length)]:ws[Math.floor(Math.random()*ws.length)];
+  $('sendTarget').textContent=kTarget;kText='';kSym='';showSent()}
+function checkSend(){if(kText.replace(/\s/g,'')===kTarget){[...kTarget].forEach(c=>record(c,true));
+  $('sendOut').innerHTML='<span style="color:var(--good)">'+esc(kText)+' ✓</span>';setTimeout(()=>{if(tab==='send')newTarget()},900)}}
+document.addEventListener('keydown',e=>{if(e.code==='Space'&&tab==='send'&&e.target.tagName!=='INPUT'){e.preventDefault();if(!e.repeat)keyDown()}});
+document.addEventListener('keyup',e=>{if(e.code==='Space'&&tab==='send'){e.preventDefault();keyUp()}});
+
+/* ---------- Tools: chart + translate ---------- */
+let toolView='chart',chartSet='letters';
+const SETS={letters:'ABCDEFGHIJKLMNOPQRSTUVWXYZ'.split(''),numbers:'1234567890'.split(''),symbols:['.',',','?','/','=']};
+function toMorse(t){return t.toUpperCase().trim().split(/\s+/).map(w=>[...w].map(c=>MORSE[c]||'').filter(Boolean).join(' ')).filter(Boolean).join(' / ')}
+function fromMorse(m){return m.trim().split(/\s*\/\s*|\s{3,}/).map(w=>w.trim().split(/\s+/).map(c=>REV[c]||(c?'#':'')).join('')).join(' ')}
+function renderTools(){
+  const el=$('tools');
+  el.innerHTML=`<div class="screen">${segHTML('tView',[['chart','Chart'],['translate','Translate']],toolView)}<div class="screen" id="toolBody" style="min-height:0"></div></div>`;
+  el.querySelector('[data-seg="tView"]').addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;toolView=b.dataset.v;stopAll();renderTools()});
+  const body=$('toolBody');
+  if(toolView==='chart'){
+    body.innerHTML=`${segHTML('cSet',[['letters','Letters'],['numbers','Numbers'],['symbols','Symbols']],chartSet)}
+      <div class="chart">${SETS[chartSet].map(c=>`<button data-play="${esc(c)}"><b>${esc(c)}</b>${pat(MORSE[c],'sm')}</button>`).join('')}</div>`;
+    body.querySelector('[data-seg="cSet"]').addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;chartSet=b.dataset.v;renderTools()});
+  }else{
+    body.innerHTML=`<div class="card"><h3 style="margin-bottom:8px">Text to Morse</h3>
+        <textarea id="tIn" placeholder="Type a message">CQ DE MORSE SHIKHO</textarea>
+        <div class="out" id="tOut" style="margin:8px 0"></div>
+        <div class="row"><button class="btn small" id="tPlay">Play</button><button class="btn ghost small" id="tStop">Stop</button></div></div>
+      <div class="card"><h3 style="margin-bottom:8px">Morse to text</h3>
+        <textarea id="mIn" placeholder=".- = A, space between letters, / between words">.... . .-.. .-.. --- / .-- --- .-. .-.. -..</textarea>
+        <div class="out" id="mOut" style="margin-top:8px"></div></div>`;
+    const rT=()=>$('tOut').textContent=toMorse($('tIn').value).replace(/\./g,'·').replace(/-/g,'–');
+    const rM=()=>$('mOut').textContent=fromMorse($('mIn').value.replace(/[·•]/g,'.').replace(/[–—_]/g,'-'));
+    $('tIn').oninput=rT;$('mIn').oninput=rM;rT();rM();
+    $('tPlay').onclick=()=>play($('tIn').value);$('tStop').onclick=stopAll;
+  }
+}
+
+/* ---------- Settings ---------- */
+const SET={wpm:['Letter speed',v=>v+' WPM','How fast each letter plays',10,35,1],
+  eff:['Spacing speed',v=>v+' WPM','Lower = more thinking time between letters',4,35,1],
+  freq:['Tone pitch',v=>v+' Hz','',400,1000,10],vol:['Volume',v=>Math.round(v*100)+'%','',.1,1,.05],
+  goal:['Daily goal',v=>v+' answers','',20,200,10]};
+function renderSettings(){
+  $('settings').innerHTML=`<div class="screen">
+    <div class="row between"><h2>Settings</h2><button class="btn small" id="setDone">Done</button></div>
+    <div class="card">${Object.entries(SET).map(([k,[l,f,h,mn,mx,st]])=>`<label class="set"><span>${l} <output id="${k}Out">${f(S.settings[k])}</output></span>${h?`<small>${h}</small>`:''}
+      <input type="range" id="${k}" min="${mn}" max="${mx}" step="${st}" value="${S.settings[k]}"></label>`).join('')}
+      <button class="btn ghost small" data-play="PARIS">Test sound</button></div>
+    <div class="grow"></div>
+    <div class="row between"><span class="muted small">Progress is saved on this device.</span><button class="link" id="reset" style="color:var(--bad)">Reset progress</button></div></div>`;
+  Object.entries(SET).forEach(([k,[,f]])=>{const el=$(k);el.oninput=()=>{S.settings[k]=+el.value;
+    if(k==='wpm'&&S.settings.eff>S.settings.wpm){S.settings.eff=S.settings.wpm;$('eff').value=S.settings.wpm;$('effOut').textContent=SET.eff[1](S.settings.wpm)}
+    if(k==='eff'&&S.settings.eff>S.settings.wpm){S.settings.eff=S.settings.wpm;el.value=S.settings.wpm}
+    $(k+'Out').textContent=f(S.settings[k]);save();renderStreak()}});
+  $('setDone').onclick=()=>showTab(prevTab);
+  $('reset').onclick=()=>{if(confirm('Reset all lessons, stats and streak?')){S=JSON.parse(JSON.stringify(DEFAULTS));save();location.reload()}};
+}
+
+
+/* ---------- Welcome ---------- */
+let wLoop=null;
+function showWelcome(){
+  const w=$('welcome'); w.hidden=false;
+  $('wRows').innerHTML=['LEARN','MORSE','DAILY'].map(word=>`<div>${[...word].map(c=>pat(MORSE[c])).join('')}</div>`).join('');
+  const reduce=window.matchMedia&&matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const lamp=$('wLamp'),key=$('wKey');
+  if(reduce){lamp.classList.add('on');}
+  else{
+    // Blink "HI" on the lamp and key, silently, on a loop
+    const u=120, seq=[];
+    ['....','..'].forEach((code,ci)=>{[...code].forEach((sym,si)=>{seq.push([sym==='.'?u:3*u,true]);seq.push([si<code.length-1?u:(ci===0?3*u:1400),false])})});
+    let i=0;const step=()=>{const [d,on]=seq[i];lamp.classList.toggle('on',on);key.classList.toggle('down',on);i=(i+1)%seq.length;wLoop=setTimeout(step,d)};
+    wLoop=setTimeout(step,500);
+  }
+  $('wGo').onclick=()=>{
+    clearTimeout(wLoop);lamp.classList.remove('on');key.classList.remove('down');
+    S.welcomed=true;save();play('HI');
+    w.classList.add('out');setTimeout(()=>{w.hidden=true;w.classList.remove('out')},420);
+  };
+}
+
+/* ---------- Navigation ---------- */
+let tab='learn',prevTab='learn';
+const RENDER={learn:renderLearn,daily:renderDaily,practice:renderPractice,send:renderSend,tools:renderTools,settings:renderSettings};
+function showTab(t){
+  activeDrill=null; stopAll(); if(t!=='settings')prevTab=t; tab=t;
+  document.querySelectorAll('#tabs [data-tab]').forEach(x=>x.setAttribute('aria-selected',x.dataset.tab===t));
+  document.querySelectorAll('main > section').forEach(s=>s.hidden=s.id!==t);
+  $('main').scrollTop=0; RENDER[t]();
+}
+$('tabs').addEventListener('click',e=>{const b=e.target.closest('[data-tab]');if(b)showTab(b.dataset.tab)});
+$('gear').onclick=()=>showTab(tab==='settings'?prevTab:'settings');
+document.addEventListener('click',e=>{const b=e.target.closest('[data-play]');if(b)play(b.dataset.play)});
+
+renderStreak();renderLearn();
+if(!S.welcomed)showWelcome();
+</script>
+</body>
+</html>
