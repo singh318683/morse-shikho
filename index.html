@@ -255,7 +255,7 @@ const WORDS=('THE AND FOR ARE BUT NOT YOU ALL ANY CAN HER WAS ONE OUR OUT DAY GE
 
 /* ---------- State ---------- */
 const DEFAULTS={level:2,stats:{},days:{},introDone:false,welcomed:false,
-  settings:{wpm:20,eff:12,freq:650,vol:0.6,sendWpm:12,goal:50}};
+  settings:{wpm:20,eff:12,freq:650,vol:0.8,sendWpm:12,goal:50}};
 let S=load();
 function load(){try{const s=JSON.parse(localStorage.getItem('morse-shikho')||'null');
   if(s){return {...DEFAULTS,...s,settings:{...DEFAULTS.settings,...(s.settings||{})}}}}catch(e){}
@@ -278,13 +278,33 @@ function renderStreak(){const n=streak();document.getElementById('streakNum').te
 /* ---------- Audio + lamp ---------- */
 let ctx=null, timers=[], pending=null, liveNodes=[];
 const lampEl=document.getElementById('lamp');
-function ac(){if(!ctx)ctx=new (window.AudioContext||window.webkitAudioContext)();if(ctx.state==='suspended')ctx.resume();return ctx}
+// iPhone: play through the silent switch (iOS 17+)
+try{if(navigator.audioSession)navigator.audioSession.type='playback'}catch(e){}
+function ac(){
+  if(!ctx)ctx=new (window.AudioContext||window.webkitAudioContext)();
+  if(ctx.state!=='running')ctx.resume().catch(()=>{});
+  return ctx}
+// Unlock audio on the first touch/click (required by iOS and Android browsers)
+let audioReady=false, silentEl=null;
+function silentWavURL(){ // 0.5s of silence, used to switch older iPhones to media playback
+  const n=4000,b=new ArrayBuffer(44+n*2),v=new DataView(b),w=(o,t)=>[...t].forEach((c,i)=>v.setUint8(o+i,c.charCodeAt(0)));
+  w(0,'RIFF');v.setUint32(4,36+n*2,true);w(8,'WAVE');w(12,'fmt ');v.setUint32(16,16,true);v.setUint16(20,1,true);v.setUint16(22,1,true);
+  v.setUint32(24,8000,true);v.setUint32(28,16000,true);v.setUint16(32,2,true);v.setUint16(34,16,true);w(36,'data');v.setUint32(40,n*2,true);
+  return URL.createObjectURL(new Blob([b],{type:'audio/wav'}))}
+function unlockAudio(){
+  const c=ac();
+  try{const src=c.createBufferSource();src.buffer=c.createBuffer(1,1,22050);src.connect(c.destination);src.start(0)}catch(e){}
+  if(!navigator.audioSession&&!silentEl){try{silentEl=new Audio(silentWavURL());silentEl.loop=true;silentEl.setAttribute('playsinline','');silentEl.play().catch(()=>{})}catch(e){}}
+  if(c.state==='running')audioReady=true;
+}
+['pointerdown','touchend','click','keydown'].forEach(ev=>document.addEventListener(ev,unlockAudio,{capture:true,passive:true}));
+document.addEventListener('visibilitychange',()=>{if(!document.hidden&&ctx&&ctx.state!=='running')ctx.resume().catch(()=>{})});
 function timing(wpm=S.settings.wpm,eff=S.settings.eff){
   const u=1.2/wpm; let cg=3*u, wg=7*u;
   if(eff<wpm){const ta=(60*wpm-37.2*eff)/(eff*wpm); cg=3*ta/19; wg=7*ta/19}
   return {u,cg,wg}}
 function tone(t,dur){
-  const c=ac(),o=c.createOscillator(),g=c.createGain(),v=S.settings.vol*0.5;
+  const c=ac(),o=c.createOscillator(),g=c.createGain(),v=S.settings.vol*0.9;
   o.type='sine';o.frequency.value=S.settings.freq;
   g.gain.setValueAtTime(0,t);g.gain.linearRampToValueAtTime(v,t+.005);
   g.gain.setValueAtTime(v,t+dur-.005);g.gain.linearRampToValueAtTime(0,t+dur);
@@ -539,7 +559,7 @@ function keyDown(){
   if(kUp&&performance.now()-kUp>kUnit()*5&&kText&&!kText.endsWith(' '))kText+=' ';
   kDown=performance.now(); $('keyer').classList.add('down'); lampEl.classList.add('on');
   kOsc=c.createOscillator();kGain=c.createGain();kOsc.frequency.value=S.settings.freq;
-  kGain.gain.setValueAtTime(0,c.currentTime);kGain.gain.linearRampToValueAtTime(S.settings.vol*.5,c.currentTime+.005);
+  kGain.gain.setValueAtTime(0,c.currentTime);kGain.gain.linearRampToValueAtTime(S.settings.vol*.9,c.currentTime+.005);
   kOsc.connect(kGain).connect(c.destination);kOsc.start();
 }
 function keyUp(){
